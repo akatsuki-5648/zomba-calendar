@@ -260,21 +260,21 @@ end
 (function(){
   "use strict";
   // ===== 設定 =====
-  var OWNER = "akatsuki-5648", REPO = "zomba-calendar", BRANCH = "main";
-  var API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/";
-  var P_DB = "data/calendar.db";
+  const OWNER = "akatsuki-5648", REPO = "zomba-calendar", BRANCH = "main";
+  const API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/";
+  const P_DB = "data/calendar.db";
   // 合言葉の照合用（sha256("zomba-calendar:" + 合言葉)）。★DBを見る時だけ使う
-  var PASS_HASH = "76560f130d79b8d5976e6247969460a9e545179adbcebe95adf947668d5f0f68";
-  var P_TOKEN = "data/token.enc.json";
-  var SQLJS_DIR = "https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/";
-  var RUBY_WASM = "https://cdn.jsdelivr.net/npm/@ruby/3.4-wasm-wasi@2.10.1/dist/ruby+stdlib.wasm";
-  var OLD_KEY = "zomba_calendar_events_v1";
+  const PASS_HASH = "76560f130d79b8d5976e6247969460a9e545179adbcebe95adf947668d5f0f68";
+  const P_TOKEN = "data/token.enc.json";
+  const SQLJS_DIR = "https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/";
+  const RUBY_WASM = "https://cdn.jsdelivr.net/npm/@ruby/3.4-wasm-wasi@2.10.1/dist/ruby+stdlib.wasm";
+  const OLD_KEY = "zomba_calendar_events_v1";
 
-  var PASS = null, TOKEN = null, AUTHOR = "";
-  var SQL = null, db = null, dbSha = null, tokSha = null;
-  var dirty = false, rubyVM = null;
-  var current = new Date(); current.setDate(1);
-  var editingId = null;
+  let PASS = null, TOKEN = null, AUTHOR = "";
+  let SQL = null, db = null, dbSha = null, tokSha = null;
+  let dirty = false, rubyVM = null;
+  let current = new Date(); current.setDate(1);
+  let editingId = null;
 
   function $(id){ return document.getElementById(id); }
   function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
@@ -282,18 +282,18 @@ end
   function nowIso(){ return new Date().toISOString(); }
   function pad(n){ return String(n).padStart(2, "0"); }
   function dateKey(y, m, d){ return y + "-" + pad(m + 1) + "-" + pad(d); }
-  function todayKey(){ var t = new Date(); return dateKey(t.getFullYear(), t.getMonth(), t.getDate()); }
+  function todayKey(){ let t = new Date(); return dateKey(t.getFullYear(), t.getMonth(), t.getDate()); }
   function msg(el, text, kind){ el.textContent = text; el.className = "msg" + (kind ? " " + kind : ""); }
 
   // ===== base64 =====
   function bytesToB64(u8){
-    var s = "", CH = 0x8000;
-    for (var i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
+    let s = "", CH = 0x8000;
+    for (let i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
     return btoa(s);
   }
   function b64ToBytes(b64){
-    var s = atob(b64), u8 = new Uint8Array(s.length);
-    for (var i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i);
+    let s = atob(b64), u8 = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i);
     return u8;
   }
 
@@ -306,36 +306,36 @@ end
       });
   }
   async function encryptBytes(pass, bytes){
-    var salt = crypto.getRandomValues(new Uint8Array(16));
-    var iv = crypto.getRandomValues(new Uint8Array(12));
-    var key = await deriveKey(pass, salt);
-    var ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, bytes));
+    let salt = crypto.getRandomValues(new Uint8Array(16));
+    let iv = crypto.getRandomValues(new Uint8Array(12));
+    let key = await deriveKey(pass, salt);
+    let ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, bytes));
     return JSON.stringify({v:1, alg:"PBKDF2-SHA256-200000/AES-256-GCM",
       salt:bytesToB64(salt), iv:bytesToB64(iv), ct:bytesToB64(ct)});
   }
   async function decryptBytes(pass, text){
-    var j = JSON.parse(text);
-    var key = await deriveKey(pass, b64ToBytes(j.salt));
-    var pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(j.iv)}, key, b64ToBytes(j.ct));
+    let j = JSON.parse(text);
+    let key = await deriveKey(pass, b64ToBytes(j.salt));
+    let pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(j.iv)}, key, b64ToBytes(j.ct));
     return new Uint8Array(pt);
   }
 
   // ===== GitHub（Contents API） =====
   async function gh(method, path, body, useAuth){
-    var h = {"Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"};
+    let h = {"Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"};
     if (useAuth !== false && TOKEN) h.Authorization = "Bearer " + TOKEN;
     if (body) h["Content-Type"] = "application/json";
-    var url = API + path + (method === "GET" ? "?ref=" + BRANCH + "&_=" + Date.now() : "");
-    var r = await fetch(url, {method:method, headers:h, body: body ? JSON.stringify(body) : undefined, cache:"no-store"});
+    let url = API + path + (method === "GET" ? "?ref=" + BRANCH + "&_=" + Date.now() : "");
+    let r = await fetch(url, {method:method, headers:h, body: body ? JSON.stringify(body) : undefined, cache:"no-store"});
     if (!r.ok){
-      var detail = ""; try { detail = (await r.json()).message || ""; } catch(e){}
-      var err = new Error("GitHub " + r.status + " " + detail); err.status = r.status; throw err;
+      let detail = ""; try { detail = (await r.json()).message || ""; } catch(e){}
+      let err = new Error("GitHub " + r.status + " " + detail); err.status = r.status; throw err;
     }
     return r.json();
   }
   async function ghGetText(path, useAuth){
     try {
-      var j = await gh("GET", path, null, useAuth);
+      let j = await gh("GET", path, null, useAuth);
       return {text: atob((j.content || "").replace(/\s/g, "")), sha: j.sha};
     } catch(e){
       if (e.status === 404) return null;
@@ -343,16 +343,16 @@ end
     }
   }
   async function ghPutText(path, text, sha, message){
-    var body = {message: message, content: btoa(text), branch: BRANCH};
+    let body = {message: message, content: btoa(text), branch: BRANCH};
     if (sha) body.sha = sha;
-    var r = await gh("PUT", path, body, true);
+    let r = await gh("PUT", path, body, true);
     return {sha: r.content.sha, commit: r.commit};
   }
 
   // ===== SQLite =====
   function q(sql, params){
-    var st = db.prepare(sql); st.bind(params || []);
-    var out = []; while (st.step()) out.push(st.getAsObject());
+    let st = db.prepare(sql); st.bind(params || []);
+    let out = []; while (st.step()) out.push(st.getAsObject());
     st.free(); return out;
   }
   function ensureSchema(){
@@ -364,7 +364,7 @@ end
     db.run("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)");
   }
   async function loadDbFromGit(){
-    var got = null;
+    let got = null;
     try { got = await gh("GET", P_DB, null, !!TOKEN); }
     catch(e){ if (e.status !== 404) throw e; }
     if (db) db.close();
@@ -380,14 +380,14 @@ end
   }
   function setDirty(v){
     dirty = v;
-    var s = $("status");
+    let s = $("status");
     if (v){ s.className = "status dirty"; s.textContent = "● 未保存の変更があります（コントロールパネル →【DBに保存】）"; }
     else if (s.className.indexOf("dirty") >= 0){ s.className = "status"; s.textContent = ""; }
   }
 
   // ===== 起動：カレンダーは合言葉なしで誰でも開ける =====
   async function boot(){
-    var s = $("status");
+    let s = $("status");
     s.textContent = "読み込んでいます…";
     try {
       SQL = await initSqlJs({locateFile: function(f){ return SQLJS_DIR + f; }});
@@ -403,13 +403,13 @@ end
 
   // ===== 合言葉：コントロールパネル（DB）を開く時だけ =====
   async function sha256hex(text){
-    var b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    let b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return Array.prototype.map.call(new Uint8Array(b), function(x){ return x.toString(16).padStart(2, "0"); }).join("");
   }
   async function unlock(){
-    var lm = $("lockMsg");
+    let lm = $("lockMsg");
     // カタカナで打っても通す（ゾンバ → ぞんば）
-    var p = $("passIn").value.normalize("NFKC").trim()
+    let p = $("passIn").value.normalize("NFKC").trim()
       .replace(/[ァ-ヶ]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0x60); });
     if (!p){ msg(lm, "合言葉を入れてください", "err"); return; }
     $("unlockBtn").disabled = true;
@@ -419,7 +419,7 @@ end
         msg(lm, "合言葉が違います", "err"); $("unlockBtn").disabled = false; return;
       }
       PASS = p;
-      var tok = await ghGetText(P_TOKEN, false);
+      let tok = await ghGetText(P_TOKEN, false);
       if (tok){
         try { TOKEN = new TextDecoder().decode(await decryptBytes(p, tok.text)); tokSha = tok.sha; }
         catch(e){ TOKEN = null; }
@@ -436,54 +436,54 @@ end
   }
 
   // ===== カレンダー描画 =====
-  var weekNames = ["日","月","火","水","木","金","土"];
+  const weekNames = ["日","月","火","水","木","金","土"];
   function render(){
-    var y = current.getFullYear(), m = current.getMonth();
+    let y = current.getFullYear(), m = current.getMonth();
     $("monthLabel").textContent = y + "年 " + (m + 1) + "月";
-    var head = $("weekHead"); head.innerHTML = "";
+    let head = $("weekHead"); head.innerHTML = "";
     weekNames.forEach(function(w, i){
-      var th = document.createElement("th"); th.textContent = w;
+      let th = document.createElement("th"); th.textContent = w;
       if (i === 0) th.className = "sun"; if (i === 6) th.className = "sat";
       head.appendChild(th);
     });
 
-    var byDate = {};
+    let byDate = {};
     q("SELECT * FROM items WHERE date LIKE ? ORDER BY kind DESC, id", [y + "-" + pad(m + 1) + "-%"])
       .forEach(function(r){ (byDate[r.date] = byDate[r.date] || []).push(r); });
 
-    var firstDay = new Date(y, m, 1).getDay(), lastDate = new Date(y, m + 1, 0).getDate();
-    var tk = todayKey(), body = $("calBody"); body.innerHTML = "";
-    var row = document.createElement("tr"), dow;
-    for (dow = 0; dow < firstDay; dow++){ var e0 = document.createElement("td"); e0.className = "empty"; row.appendChild(e0); }
-    for (var d = 1; d <= lastDate; d++){
+    let firstDay = new Date(y, m, 1).getDay(), lastDate = new Date(y, m + 1, 0).getDate();
+    let tk = todayKey(), body = $("calBody"); body.innerHTML = "";
+    let row = document.createElement("tr"), dow;
+    for (dow = 0; dow < firstDay; dow++){ let e0 = document.createElement("td"); e0.className = "empty"; row.appendChild(e0); }
+    for (let d = 1; d <= lastDate; d++){
       if (dow === 7){ body.appendChild(row); row = document.createElement("tr"); dow = 0; }
-      var key = dateKey(y, m, d), td = document.createElement("td"), cls = [];
+      let key = dateKey(y, m, d), td = document.createElement("td"), cls = [];
       if (dow === 0) cls.push("sun"); if (dow === 6) cls.push("sat"); if (key === tk) cls.push("today");
       td.className = cls.join(" ");
       td.innerHTML = '<div class="daynum">' + d + '</div>';
-      var add = document.createElement("button"); add.className = "add-day"; add.textContent = "＋";
+      let add = document.createElement("button"); add.className = "add-day"; add.textContent = "＋";
       add.onclick = (function(k){ return function(){ openItem(null, k); }; })(key);
       td.appendChild(add);
-      var wrap = document.createElement("div"); wrap.className = "events";
+      let wrap = document.createElement("div"); wrap.className = "events";
       (byDate[key] || []).forEach(function(r){
-        var el = document.createElement("div");
+        let el = document.createElement("div");
         el.className = "event" + (r.kind === "task" ? " task" : "") + (r.done ? " done" : "");
         el.title = r.memo || "";
         if (r.kind === "task"){
-          var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!r.done;
+          let cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!r.done;
           cb.onclick = function(ev){ ev.stopPropagation();
             db.run("UPDATE items SET done=?, updated_at=? WHERE id=?", [cb.checked ? 1 : 0, nowIso(), r.id]);
             setDirty(true); render(); };
           el.appendChild(cb);
         }
-        var t = document.createElement("span"); t.className = "t"; t.textContent = r.title;
+        let t = document.createElement("span"); t.className = "t"; t.textContent = r.title;
         el.appendChild(t);
         el.onclick = function(){ openItem(r.id); };
         wrap.appendChild(el);
       });
       td.appendChild(wrap); row.appendChild(td); dow++;
     }
-    while (dow !== 0 && dow < 7){ var e1 = document.createElement("td"); e1.className = "empty"; row.appendChild(e1); dow++; }
+    while (dow !== 0 && dow < 7){ let e1 = document.createElement("td"); e1.className = "empty"; row.appendChild(e1); dow++; }
     body.appendChild(row);
   }
 
@@ -491,7 +491,7 @@ end
   function openItem(id, key){
     editingId = id;
     if (id){
-      var r = q("SELECT * FROM items WHERE id=?", [id])[0];
+      let r = q("SELECT * FROM items WHERE id=?", [id])[0];
       $("itemTitle").textContent = "編集";
       $("itKind").value = r.kind; $("itDate").value = r.date; $("itName").value = r.title; $("itMemo").value = r.memo || "";
       $("itDel").style.display = "";
@@ -507,9 +507,9 @@ end
   $("itCancel").onclick = closeItem;
   $("itemBg").onclick = function(e){ if (e.target === this) closeItem(); };
   $("itSave").onclick = function(){
-    var title = $("itName").value.trim(), date = $("itDate").value;
+    let title = $("itName").value.trim(), date = $("itDate").value;
     if (!title || !date) return;
-    var kind = $("itKind").value, memo = $("itMemo").value.trim();
+    let kind = $("itKind").value, memo = $("itMemo").value.trim();
     AUTHOR = $("nameIn").value.trim();
     try { localStorage.setItem("zomba_author", AUTHOR); } catch(e){}
     if (editingId){
@@ -549,20 +549,20 @@ end
 
   function tableHtml(columns, values){
     if (!columns.length) return '<div class="note" style="padding:8px;">（0件）</div>';
-    var h = "<table class='data'><tr>" + columns.map(function(c){ return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>";
+    let h = "<table class='data'><tr>" + columns.map(function(c){ return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>";
     values.forEach(function(v){ h += "<tr>" + v.map(function(x){ return "<td title='" + esc(x) + "'>" + esc(x) + "</td>"; }).join("") + "</tr>"; });
     return h + "</table>";
   }
   function fillTables(){
-    var sel = $("tblSel"), keep = sel.value;
+    let sel = $("tblSel"), keep = sel.value;
     sel.innerHTML = q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
       .map(function(r){ return "<option>" + esc(r.name) + "</option>"; }).join("");
     if (keep) sel.value = keep; else sel.value = "items";
   }
   function showTable(){
-    var name = $("tblSel").value; if (!name) return;
-    var res = db.exec('SELECT * FROM "' + name.replace(/"/g, '""') + '" ORDER BY 1');
-    var cnt = q('SELECT COUNT(*) AS n FROM "' + name.replace(/"/g, '""') + '"')[0].n;
+    let name = $("tblSel").value; if (!name) return;
+    let res = db.exec('SELECT * FROM "' + name.replace(/"/g, '""') + '" ORDER BY 1');
+    let cnt = q('SELECT COUNT(*) AS n FROM "' + name.replace(/"/g, '""') + '"')[0].n;
     $("tblInfo").textContent = name + "：" + cnt + " 件";
     $("tblOut").innerHTML = res.length ? tableHtml(res[0].columns, res[0].values) : tableHtml([], []);
   }
@@ -570,11 +570,11 @@ end
   $("tblSel").onchange = showTable;
 
   $("sqlRun").onclick = function(){
-    var sql = $("sqlIn").value, out = $("sqlOut");
+    let sql = $("sqlIn").value, out = $("sqlOut");
     try {
-      var res = db.exec(sql);
-      var changed = db.getRowsModified();
-      var writes = /^\s*(insert|update|delete|replace|create|drop|alter)/im.test(sql);
+      let res = db.exec(sql);
+      let changed = db.getRowsModified();
+      let writes = /^\s*(insert|update|delete|replace|create|drop|alter)/im.test(sql);
       if (writes){ setDirty(true); render(); fillTables(); }
       out.innerHTML = res.length ? res.map(function(r){ return tableHtml(r.columns, r.values); }).join("<br>")
         : '<div class="note" style="padding:8px;">実行しました（変更 ' + changed + ' 行）</div>';
@@ -585,15 +585,15 @@ end
 
   // ===== DBに保存（Gitへ書き込む） =====
   $("saveBtn").onclick = async function(){
-    var pm = $("panelMsg");
+    let pm = $("panelMsg");
     if (!TOKEN){ msg(pm, "Gitへ書き込む鍵がまだありません。【設定】で登録してください。", "err"); showTab("tSet"); return; }
     this.disabled = true; msg(pm, "Gitへ書き込んでいます…");
     try {
-      var n = q("SELECT COUNT(*) AS n FROM items")[0].n;
-      var body = {message: "calendar: DB保存 " + n + "件", content: bytesToB64(db.export()), branch: BRANCH};
+      let n = q("SELECT COUNT(*) AS n FROM items")[0].n;
+      let body = {message: "calendar: DB保存 " + n + "件", content: bytesToB64(db.export()), branch: BRANCH};
       if (dbSha) body.sha = dbSha;
-      var put = await gh("PUT", P_DB, body, true);
-      var r = {sha: put.content.sha, commit: put.commit};
+      let put = await gh("PUT", P_DB, body, true);
+      let r = {sha: put.content.sha, commit: put.commit};
       dbSha = r.sha; setDirty(false);
       msg(pm, "保存しました（" + n + "件）", "ok");
       $("status").className = "status";
@@ -610,7 +610,7 @@ end
   };
 
   $("pullBtn").onclick = async function(){
-    var pm = $("panelMsg");
+    let pm = $("panelMsg");
     if (dirty && !confirm("未保存の変更があります。捨てて最新を取得しますか？")) return;
     msg(pm, "最新を取得しています…");
     try { await loadDbFromGit(); render(); fillTables(); showTable(); msg(pm, "最新を取得しました", "ok"); }
@@ -619,22 +619,22 @@ end
 
   // ===== Ruby集計 =====
   $("rubyRun").onclick = async function(){
-    var info = $("rubyInfo"), out = $("rubyOut");
+    let info = $("rubyInfo"), out = $("rubyOut");
     this.disabled = true;
     try {
       if (!rubyVM){
         info.textContent = "Rubyを読み込んでいます…（初回だけ）";
-        var mod = await WebAssembly.compileStreaming(fetch(RUBY_WASM));
-        var made = await window["ruby-wasm-wasi"].DefaultRubyVM(mod);
+        let mod = await WebAssembly.compileStreaming(fetch(RUBY_WASM));
+        let made = await window["ruby-wasm-wasi"].DefaultRubyVM(mod);
         rubyVM = made.vm;
         rubyVM.eval($("rubySrc").textContent);
       }
       window.__zombaRows = JSON.stringify(q("SELECT * FROM items ORDER BY date, id"));
       window.__zombaToday = todayKey();
-      var s = rubyVM.eval('require "js"; summarize(JS.global[:__zombaRows].to_s, JS.global[:__zombaToday].to_s)').toString();
-      var r = JSON.parse(s);
+      let s = rubyVM.eval('require "js"; summarize(JS.global[:__zombaRows].to_s, JS.global[:__zombaToday].to_s)').toString();
+      let r = JSON.parse(s);
       info.textContent = "Ruby " + r.ruby + " で集計しました";
-      var li = function(arr, f){ return arr.length ? arr.map(f).join("<br>") : "（なし）"; };
+      let li = function(arr, f){ return arr.length ? arr.map(f).join("<br>") : "（なし）"; };
       out.innerHTML =
         '<div class="cards">' +
           '<div class="card"><small>全部</small><b>' + r.total + '</b></div>' +
@@ -660,18 +660,18 @@ end
       : "まだ登録されていません。登録するまで【DBに保存】はできません（見る・試すことはできます）。";
   }
   $("tokSave").onclick = async function(){
-    var pm = $("panelMsg"), t = $("tokIn").value.trim();
+    let pm = $("panelMsg"), t = $("tokIn").value.trim();
     if (!t){ msg(pm, "鍵を貼ってください", "err"); return; }
     this.disabled = true; msg(pm, "鍵を確かめています…");
-    var old = TOKEN; TOKEN = t;
+    let old = TOKEN; TOKEN = t;
     try {
-      var r = await fetch("https://api.github.com/repos/" + OWNER + "/" + REPO,
+      let r = await fetch("https://api.github.com/repos/" + OWNER + "/" + REPO,
         {headers:{"Authorization":"Bearer " + t, "Accept":"application/vnd.github+json"}, cache:"no-store"});
       if (!r.ok) throw new Error("この鍵ではリポジトリを開けません（" + r.status + "）");
-      var info = await r.json();
+      let info = await r.json();
       if (!info.permissions || !info.permissions.push) throw new Error("この鍵には書き込み権限がありません");
-      var cur = await ghGetText(P_TOKEN, true);
-      var res = await ghPutText(P_TOKEN, await encryptBytes(PASS, new TextEncoder().encode(t)),
+      let cur = await ghGetText(P_TOKEN, true);
+      let res = await ghPutText(P_TOKEN, await encryptBytes(PASS, new TextEncoder().encode(t)),
         cur ? cur.sha : null, "setup: 書き込み鍵を登録（合言葉で暗号化済み）");
       tokSha = res.sha; $("tokIn").value = "";
       updateTokState(); msg(pm, "鍵を登録しました。【DBに保存】が使えます。", "ok");
@@ -683,9 +683,9 @@ end
 
   // ===== 設定：前のカレンダーを取り込む =====
   $("importBtn").onclick = function(){
-    var raw = null; try { raw = localStorage.getItem(OLD_KEY); } catch(e){}
-    var data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch(e){}
-    var n = 0;
+    let raw = null; try { raw = localStorage.getItem(OLD_KEY); } catch(e){}
+    let data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch(e){}
+    let n = 0;
     Object.keys(data).forEach(function(k){
       (data[k] || []).forEach(function(ev){
         db.run("INSERT INTO items(date,kind,title,memo,done,author,created_at,updated_at) VALUES(?,?,?,?,0,?,?,?)",
