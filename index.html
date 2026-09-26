@@ -6,119 +6,109 @@
 <title>ゾンバ共同作業カレンダー</title>
 <style>
   :root{
-    --bg:#0f1117;
-    --panel:#171a23;
-    --panel2:#1e2230;
-    --border:#2a2f3d;
-    --text:#e8e9ee;
-    --sub:#9aa0b4;
-    --accent:#7c9cff;
-    --accent2:#ff8a65;
-    --today:#3ddc97;
-    --danger:#ff5f6d;
+    --bg:#0f1117; --panel:#171a23; --panel2:#1e2230; --border:#2a2f3d;
+    --text:#e8e9ee; --sub:#9aa0b4; --accent:#7c9cff; --accent2:#ff8a65;
+    --today:#3ddc97; --danger:#ff5f6d; --task:#ffc857;
   }
   *{box-sizing:border-box;}
-  body{
-    margin:0;
-    padding:16px;
-    background:var(--bg);
-    color:var(--text);
-    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;
-    min-height:100vh;
-  }
+  body{margin:0;padding:16px;background:var(--bg);color:var(--text);
+    font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif;min-height:100vh;}
   .wrap{max-width:960px;margin:0 auto;}
-  header{
-    display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
-    gap:12px;margin-bottom:16px;
-  }
+  header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
   h1{font-size:1.3rem;margin:0;letter-spacing:.02em;}
   h1 span{color:var(--accent);}
-  .nav{display:flex;align-items:center;gap:8px;}
-  button{
-    background:var(--panel2);
-    border:1px solid var(--border);
-    color:var(--text);
-    padding:8px 14px;
-    border-radius:8px;
-    cursor:pointer;
-    font-size:.9rem;
-  }
+  .nav{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  button{background:var(--panel2);border:1px solid var(--border);color:var(--text);
+    padding:8px 14px;border-radius:8px;cursor:pointer;font-size:.9rem;}
   button:hover{border-color:var(--accent);}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#0f1117;font-weight:bold;}
+  button.warn{border-color:var(--accent2);color:var(--accent2);}
+  button:disabled{opacity:.5;cursor:default;}
   #monthLabel{font-size:1.1rem;font-weight:bold;min-width:130px;text-align:center;}
-  .calendar{
-    background:var(--panel);
-    border:1px solid var(--border);
-    border-radius:14px;
-    padding:12px;
-    overflow-x:auto;
-  }
-  table{width:100%;border-collapse:collapse;table-layout:fixed;min-width:560px;}
-  th{
-    padding:8px 4px;
-    font-size:.78rem;
-    color:var(--sub);
-    font-weight:normal;
-  }
-  th.sun{color:var(--danger);}
-  th.sat{color:var(--accent);}
-  td{
-    vertical-align:top;
-    height:92px;
-    border:1px solid var(--border);
-    border-radius:8px;
-    padding:6px;
-    position:relative;
-    background:var(--panel2);
-  }
-  td.empty{background:transparent;border:none;}
-  td.today{outline:2px solid var(--today);}
+  .status{font-size:.78rem;color:var(--sub);margin-bottom:10px;min-height:1.2em;}
+  .status.dirty{color:var(--task);}
+  .status a{color:var(--accent);}
+  .calendar{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:12px;overflow-x:auto;}
+  table.cal{width:100%;border-collapse:collapse;table-layout:fixed;min-width:560px;}
+  .cal th{padding:8px 4px;font-size:.78rem;color:var(--sub);font-weight:normal;}
+  .cal th.sun{color:var(--danger);} .cal th.sat{color:var(--accent);}
+  .cal td{vertical-align:top;height:96px;border:1px solid var(--border);border-radius:8px;
+    padding:6px;position:relative;background:var(--panel2);}
+  .cal td.empty{background:transparent;border:none;}
+  .cal td.today{outline:2px solid var(--today);}
   .daynum{font-size:.85rem;color:var(--sub);}
-  td.sun .daynum{color:var(--danger);}
-  td.sat .daynum{color:var(--accent);}
-  .events{margin-top:4px;display:flex;flex-direction:column;gap:3px;max-height:56px;overflow-y:auto;}
-  .event{
-    background:rgba(124,156,255,.18);
-    border-left:3px solid var(--accent);
-    border-radius:4px;
-    padding:2px 5px;
-    font-size:.7rem;
-    cursor:pointer;
-    display:flex;
-    justify-content:space-between;
-    gap:4px;
-  }
-  .event:hover{background:rgba(124,156,255,.32);}
-  .event .x{color:var(--sub);cursor:pointer;}
-  .add-day{
-    position:absolute;top:4px;right:4px;
-    font-size:.75rem;color:var(--sub);
-    background:none;border:none;padding:2px 6px;cursor:pointer;
-  }
+  .cal td.sun .daynum{color:var(--danger);} .cal td.sat .daynum{color:var(--accent);}
+  .events{margin-top:4px;display:flex;flex-direction:column;gap:3px;max-height:60px;overflow-y:auto;}
+  .event{background:rgba(124,156,255,.18);border-left:3px solid var(--accent);border-radius:4px;
+    padding:2px 5px;font-size:.7rem;cursor:pointer;display:flex;align-items:center;gap:4px;}
+  .event.task{background:rgba(255,200,87,.14);border-left-color:var(--task);}
+  .event.done span.t{text-decoration:line-through;opacity:.6;}
+  .event:hover{filter:brightness(1.25);}
+  .event input{margin:0;}
+  .event span.t{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .add-day{position:absolute;top:4px;right:4px;font-size:.75rem;color:var(--sub);
+    background:none;border:none;padding:2px 6px;cursor:pointer;}
   .add-day:hover{color:var(--accent);}
-  .modal-bg{
-    position:fixed;inset:0;background:rgba(0,0,0,.6);
-    display:none;align-items:center;justify-content:center;z-index:50;padding:16px;
-  }
-  .modal-bg.open{display:flex;}
-  .modal{
-    background:var(--panel);border:1px solid var(--border);border-radius:12px;
-    padding:20px;width:100%;max-width:380px;
-  }
-  .modal h3{margin-top:0;font-size:1rem;}
-  .modal label{display:block;font-size:.8rem;color:var(--sub);margin:10px 0 4px;}
-  .modal input, .modal select, .modal textarea{
-    width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);
-    background:var(--bg);color:var(--text);font-size:.9rem;
-  }
-  .modal textarea{resize:vertical;min-height:60px;}
-  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
-  .modal-actions button.primary{background:var(--accent);border-color:var(--accent);color:#0f1117;font-weight:bold;}
-  .legend{margin-top:14px;font-size:.75rem;color:var(--sub);text-align:center;}
+  .legend{margin-top:12px;font-size:.75rem;color:var(--sub);text-align:center;line-height:1.6;}
   footer{text-align:center;font-size:.72rem;color:var(--sub);margin-top:20px;opacity:.7;}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;
+    justify-content:center;z-index:50;padding:16px;}
+  .modal-bg.open{display:flex;}
+  .modal{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:20px;
+    width:100%;max-width:400px;max-height:92vh;overflow:auto;}
+  .modal.wide{max-width:860px;}
+  .modal h3{margin-top:0;font-size:1rem;}
+  label{display:block;font-size:.8rem;color:var(--sub);margin:10px 0 4px;}
+  input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid var(--border);
+    background:var(--bg);color:var(--text);font-size:.9rem;font-family:inherit;}
+  textarea{resize:vertical;min-height:60px;}
+  textarea.code{font-family:Consolas,monospace;font-size:.82rem;min-height:90px;}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;flex-wrap:wrap;}
+  .actions .left{margin-right:auto;}
+  .msg{font-size:.8rem;margin-top:8px;min-height:1.1em;}
+  .msg.err{color:var(--danger);} .msg.ok{color:var(--today);}
+
+  #lock{max-width:360px;margin:12vh auto 0;background:var(--panel);border:1px solid var(--border);
+    border-radius:14px;padding:24px;}
+  #lock h2{margin:0 0 6px;font-size:1.1rem;}
+  #lock p{font-size:.8rem;color:var(--sub);margin:0 0 8px;}
+  #app{display:none;}
+
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+  .tabs button.on{border-color:var(--accent);color:var(--accent);}
+  .tab{display:none;} .tab.on{display:block;}
+  .tbl-wrap{overflow:auto;max-height:50vh;border:1px solid var(--border);border-radius:8px;}
+  table.data{border-collapse:collapse;width:100%;font-size:.78rem;}
+  table.data th,table.data td{border-bottom:1px solid var(--border);padding:5px 7px;text-align:left;
+    vertical-align:top;white-space:nowrap;max-width:260px;overflow:hidden;text-overflow:ellipsis;}
+  table.data th{position:sticky;top:0;background:var(--panel2);color:var(--sub);font-weight:normal;}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:12px;}
+  .card{background:var(--panel2);border:1px solid var(--border);border-radius:10px;padding:10px;}
+  .card b{display:block;font-size:1.3rem;margin-top:2px;}
+  .card small{color:var(--sub);font-size:.72rem;}
+  .list{font-size:.8rem;line-height:1.7;}
+  .note{font-size:.75rem;color:var(--sub);line-height:1.6;}
+  @media (max-width:600px){ body{padding:10px;} h1{font-size:1.1rem;} }
 </style>
 </head>
 <body>
-<div class="wrap">
+
+<!-- ===== ロック画面：合言葉 ===== -->
+<div id="lock">
+  <h2>🗓️ ゾンバ共同作業カレンダー</h2>
+  <p>合言葉を入れると開きます。</p>
+  <label>合言葉</label>
+  <input type="password" id="passIn" autocomplete="off">
+  <label>名前（誰が書いたかの記録用）</label>
+  <input type="text" id="nameIn" placeholder="例：ゾンバ">
+  <div class="actions"><button class="primary" id="unlockBtn">開く</button></div>
+  <div class="msg" id="lockMsg"></div>
+</div>
+
+<!-- ===== 本体 ===== -->
+<div class="wrap" id="app">
   <header>
     <h1>🗓️ <span>ゾンバ</span>共同作業カレンダー</h1>
     <div class="nav">
@@ -126,194 +116,574 @@
       <div id="monthLabel"></div>
       <button id="nextBtn">→</button>
       <button id="todayBtn">今日</button>
+      <button class="primary" id="panelBtn">⚙ コントロールパネル</button>
     </div>
   </header>
+  <div class="status" id="status"></div>
 
   <div class="calendar">
-    <table>
-      <thead>
-        <tr id="weekHead"></tr>
-      </thead>
+    <table class="cal">
+      <thead><tr id="weekHead"></tr></thead>
       <tbody id="calBody"></tbody>
     </table>
   </div>
 
-  <div class="legend">日付の右上「＋」で予定を追加。予定は各自のブラウザに保存されます（このページはローカル保存のみ）。</div>
-  <footer>ゾンバさんとの共同作業 / Discord カレンダー</footer>
+  <div class="legend">
+    日付の右上「＋」で予定・タスクを追加。クリックで編集。<br>
+    追加・編集はまだ<b>このブラウザの中だけ</b>。コントロールパネルの【DBに保存】でGitに書き込まれます。
+  </div>
+  <footer>ゾンバさんとの共同作業 / SQLite ＋ Ruby（ruby.wasm）＋ GitHub</footer>
 </div>
 
-<div class="modal-bg" id="modalBg">
+<!-- ===== 予定の追加・編集 ===== -->
+<div class="modal-bg" id="itemBg">
   <div class="modal">
-    <h3 id="modalTitle">予定を追加</h3>
+    <h3 id="itemTitle">予定を追加</h3>
+    <label>種類</label>
+    <select id="itKind"><option value="event">予定</option><option value="task">タスク</option></select>
+    <label>日付</label>
+    <input type="date" id="itDate">
     <label>タイトル</label>
-    <input type="text" id="evTitle" placeholder="例：定例MTG">
+    <input type="text" id="itName" placeholder="例：定例MTG">
     <label>メモ</label>
-    <textarea id="evMemo" placeholder="任意"></textarea>
-    <div class="modal-actions">
-      <button id="cancelBtn">キャンセル</button>
-      <button class="primary" id="saveBtn">保存</button>
+    <textarea id="itMemo" placeholder="任意"></textarea>
+    <div class="actions">
+      <button class="warn left" id="itDel">削除</button>
+      <button id="itCancel">キャンセル</button>
+      <button class="primary" id="itSave">決定</button>
     </div>
   </div>
 </div>
 
+<!-- ===== コントロールパネル ===== -->
+<div class="modal-bg" id="panelBg">
+  <div class="modal wide">
+    <div class="row" style="justify-content:space-between;margin-bottom:10px;">
+      <h3 style="margin:0;">⚙ コントロールパネル</h3>
+      <div class="row">
+        <button class="primary" id="saveBtn">💾 DBに保存（Gitへ書き込む）</button>
+        <button id="pullBtn">⟳ 最新を取得</button>
+        <button id="panelClose">閉じる</button>
+      </div>
+    </div>
+    <div class="msg" id="panelMsg"></div>
+
+    <div class="tabs">
+      <button data-tab="tData" class="on">DBの中身</button>
+      <button data-tab="tSql">SQL</button>
+      <button data-tab="tRuby">Ruby集計</button>
+      <button data-tab="tSet">設定</button>
+    </div>
+
+    <div class="tab on" id="tData">
+      <div class="row" style="margin-bottom:8px;">
+        <select id="tblSel" style="width:auto;"></select>
+        <button id="tblShow">表示</button>
+        <span class="note" id="tblInfo"></span>
+      </div>
+      <div class="tbl-wrap" id="tblOut"></div>
+    </div>
+
+    <div class="tab" id="tSql">
+      <textarea class="code" id="sqlIn">SELECT date, kind, title, done, author FROM items ORDER BY date;</textarea>
+      <div class="actions" style="margin-top:8px;"><button class="primary" id="sqlRun">実行</button></div>
+      <div class="note">書き換える文（INSERT / UPDATE / DELETE など）はブラウザの中のDBに反映されます。Gitに残すには【DBに保存】。</div>
+      <div class="tbl-wrap" id="sqlOut" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="tab" id="tRuby">
+      <div class="row" style="margin-bottom:8px;">
+        <button class="primary" id="rubyRun">Rubyで集計する</button>
+        <span class="note" id="rubyInfo">初回だけRuby本体（約30MB）を読み込みます。</span>
+      </div>
+      <div id="rubyOut"></div>
+    </div>
+
+    <div class="tab" id="tSet">
+      <label>Gitへ書き込む鍵（GitHub fine-grained token）</label>
+      <div class="note" id="tokState"></div>
+      <input type="password" id="tokIn" placeholder="github_pat_…（ここに貼る。画面にもGitにも平文では残りません）" autocomplete="off">
+      <div class="actions" style="margin-top:8px;"><button class="primary" id="tokSave">合言葉で暗号化して登録</button></div>
+      <div class="note">
+        鍵は <b>zomba-calendar だけ</b>・<b>Contents: Read and write</b> だけで作ってください。<br>
+        合言葉で暗号化した形だけが <code>data/token.enc.json</code> としてGitに置かれます。
+      </div>
+      <hr style="border-color:var(--border);margin:16px 0;">
+      <label>前のカレンダー（このブラウザに残っている予定）を取り込む</label>
+      <div class="row"><button id="importBtn">取り込む</button><span class="note" id="importInfo"></span></div>
+      <hr style="border-color:var(--border);margin:16px 0;">
+      <div class="row"><button class="warn" id="lockBtn">ロックする</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- Ruby：コントロールパネルの集計を担当（ruby.wasm で動く） -->
+<script type="text/x-ruby" id="rubySrc">
+require "json"
+require "date"
+
+def summarize(json, today_s)
+  rows  = JSON.parse(json)
+  today = Date.parse(today_s)
+  date_of = ->(r) { Date.parse(r["date"].to_s) rescue nil }
+
+  tasks = rows.select { |r| r["kind"] == "task" }
+  done  = tasks.count { |t| t["done"].to_i == 1 }
+
+  upcoming = rows.select { |r| d = date_of.(r); d && d >= today && d <= today + 7 }
+                 .sort_by { |r| [r["date"], r["id"].to_i] }
+  overdue  = tasks.select { |t| d = date_of.(t); t["done"].to_i == 0 && d && d < today }
+                  .sort_by { |t| t["date"] }
+
+  by_month  = rows.group_by { |r| r["date"].to_s[0, 7] }.transform_values(&:size).sort.to_h
+  by_author = rows.group_by { |r| r["author"].to_s.empty? ? "(名前なし)" : r["author"] }
+                  .transform_values(&:size).sort_by { |_, n| -n }.to_h
+
+  JSON.generate(
+    total: rows.size,
+    events: rows.size - tasks.size,
+    tasks: tasks.size,
+    done: done,
+    rate: tasks.empty? ? 0 : (done * 100.0 / tasks.size).round(1),
+    upcoming: upcoming.map { |r| r.slice("date", "kind", "title") },
+    overdue: overdue.map { |r| r.slice("date", "title") },
+    by_month: by_month,
+    by_author: by_author,
+    ruby: RUBY_VERSION
+  )
+end
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/sql-wasm.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ruby/wasm-wasi@2.10.1/dist/browser.umd.js"></script>
 <script>
 (function(){
-  var STORAGE_KEY = "zomba_calendar_events_v1";
-  var current = new Date();
-  current.setDate(1);
-  var pendingDateKey = null;
+  "use strict";
+  // ===== 設定 =====
+  var OWNER = "akatsuki-5648", REPO = "zomba-calendar", BRANCH = "main";
+  var API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/";
+  var P_DB = "data/calendar.db.enc.json";
+  var P_TOKEN = "data/token.enc.json";
+  var SQLJS_DIR = "https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/";
+  var RUBY_WASM = "https://cdn.jsdelivr.net/npm/@ruby/3.4-wasm-wasi@2.10.1/dist/ruby+stdlib.wasm";
+  var OLD_KEY = "zomba_calendar_events_v1";
 
-  function loadEvents(){
-    try{
-      var raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
-    }catch(e){ return {}; }
-  }
-  function saveEvents(data){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }catch(e){}
-  }
-  var events = loadEvents();
+  var PASS = null, TOKEN = null, AUTHOR = "";
+  var SQL = null, db = null, dbSha = null, tokSha = null;
+  var dirty = false, rubyVM = null;
+  var current = new Date(); current.setDate(1);
+  var editingId = null;
 
-  function dateKey(y,m,d){
-    return y + "-" + String(m+1).padStart(2,"0") + "-" + String(d).padStart(2,"0");
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]; }); }
+  function nowIso(){ return new Date().toISOString(); }
+  function pad(n){ return String(n).padStart(2, "0"); }
+  function dateKey(y, m, d){ return y + "-" + pad(m + 1) + "-" + pad(d); }
+  function todayKey(){ var t = new Date(); return dateKey(t.getFullYear(), t.getMonth(), t.getDate()); }
+  function msg(el, text, kind){ el.textContent = text; el.className = "msg" + (kind ? " " + kind : ""); }
+
+  // ===== base64 =====
+  function bytesToB64(u8){
+    var s = "", CH = 0x8000;
+    for (var i = 0; i < u8.length; i += CH) s += String.fromCharCode.apply(null, u8.subarray(i, i + CH));
+    return btoa(s);
+  }
+  function b64ToBytes(b64){
+    var s = atob(b64), u8 = new Uint8Array(s.length);
+    for (var i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i);
+    return u8;
   }
 
+  // ===== 暗号（合言葉 → PBKDF2 → AES-GCM） =====
+  function deriveKey(pass, salt){
+    return crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"])
+      .then(function(base){
+        return crypto.subtle.deriveKey({name:"PBKDF2", salt:salt, iterations:200000, hash:"SHA-256"},
+          base, {name:"AES-GCM", length:256}, false, ["encrypt","decrypt"]);
+      });
+  }
+  async function encryptBytes(pass, bytes){
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    var key = await deriveKey(pass, salt);
+    var ct = new Uint8Array(await crypto.subtle.encrypt({name:"AES-GCM", iv:iv}, key, bytes));
+    return JSON.stringify({v:1, alg:"PBKDF2-SHA256-200000/AES-256-GCM",
+      salt:bytesToB64(salt), iv:bytesToB64(iv), ct:bytesToB64(ct)});
+  }
+  async function decryptBytes(pass, text){
+    var j = JSON.parse(text);
+    var key = await deriveKey(pass, b64ToBytes(j.salt));
+    var pt = await crypto.subtle.decrypt({name:"AES-GCM", iv:b64ToBytes(j.iv)}, key, b64ToBytes(j.ct));
+    return new Uint8Array(pt);
+  }
+
+  // ===== GitHub（Contents API） =====
+  async function gh(method, path, body, useAuth){
+    var h = {"Accept":"application/vnd.github+json", "X-GitHub-Api-Version":"2022-11-28"};
+    if (useAuth !== false && TOKEN) h.Authorization = "Bearer " + TOKEN;
+    if (body) h["Content-Type"] = "application/json";
+    var url = API + path + (method === "GET" ? "?ref=" + BRANCH + "&_=" + Date.now() : "");
+    var r = await fetch(url, {method:method, headers:h, body: body ? JSON.stringify(body) : undefined, cache:"no-store"});
+    if (!r.ok){
+      var detail = ""; try { detail = (await r.json()).message || ""; } catch(e){}
+      var err = new Error("GitHub " + r.status + " " + detail); err.status = r.status; throw err;
+    }
+    return r.json();
+  }
+  async function ghGetText(path, useAuth){
+    try {
+      var j = await gh("GET", path, null, useAuth);
+      return {text: atob((j.content || "").replace(/\s/g, "")), sha: j.sha};
+    } catch(e){
+      if (e.status === 404) return null;
+      throw e;
+    }
+  }
+  async function ghPutText(path, text, sha, message){
+    var body = {message: message, content: btoa(text), branch: BRANCH};
+    if (sha) body.sha = sha;
+    var r = await gh("PUT", path, body, true);
+    return {sha: r.content.sha, commit: r.commit};
+  }
+
+  // ===== SQLite =====
+  function q(sql, params){
+    var st = db.prepare(sql); st.bind(params || []);
+    var out = []; while (st.step()) out.push(st.getAsObject());
+    st.free(); return out;
+  }
+  function ensureSchema(){
+    db.run("CREATE TABLE IF NOT EXISTS items(" +
+      "id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, kind TEXT NOT NULL DEFAULT 'event'," +
+      "title TEXT NOT NULL, memo TEXT DEFAULT '', done INTEGER DEFAULT 0, author TEXT DEFAULT ''," +
+      "created_at TEXT, updated_at TEXT)");
+    db.run("CREATE INDEX IF NOT EXISTS idx_items_date ON items(date)");
+    db.run("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)");
+  }
+  async function loadDbFromGit(){
+    var got = await ghGetText(P_DB, !!TOKEN);
+    if (db) db.close();
+    if (got){
+      db = new SQL.Database(await decryptBytes(PASS, got.text));
+      dbSha = got.sha;
+    } else {
+      db = new SQL.Database();
+      dbSha = null;
+    }
+    ensureSchema();
+    setDirty(false);
+  }
+  function setDirty(v){
+    dirty = v;
+    var s = $("status");
+    if (v){ s.className = "status dirty"; s.textContent = "● 未保存の変更があります（コントロールパネル →【DBに保存】）"; }
+    else if (s.className.indexOf("dirty") >= 0){ s.className = "status"; s.textContent = ""; }
+  }
+
+  // ===== ロック解除 =====
+  async function unlock(){
+    var lm = $("lockMsg");
+    var p = $("passIn").value.normalize("NFC").trim();
+    if (!p){ msg(lm, "合言葉を入れてください", "err"); return; }
+    AUTHOR = $("nameIn").value.trim();
+    try { localStorage.setItem("zomba_author", AUTHOR); } catch(e){}
+    $("unlockBtn").disabled = true;
+    msg(lm, "開いています…");
+    try {
+      var tok = await ghGetText(P_TOKEN, false);
+      if (tok){
+        try { TOKEN = new TextDecoder().decode(await decryptBytes(p, tok.text)); tokSha = tok.sha; }
+        catch(e){ msg(lm, "合言葉が違います", "err"); $("unlockBtn").disabled = false; return; }
+      }
+      PASS = p;
+      if (!SQL) SQL = await initSqlJs({locateFile: function(f){ return SQLJS_DIR + f; }});
+      try { await loadDbFromGit(); }
+      catch(e){
+        if (e.name === "OperationError"){ msg(lm, "DBの暗号が合言葉と合いません", "err"); $("unlockBtn").disabled = false; return; }
+        throw e;
+      }
+      $("lock").style.display = "none";
+      $("app").style.display = "block";
+      render();
+      updateTokState();
+      openPanel();
+      if (!TOKEN) showTab("tSet");
+    } catch(e){
+      msg(lm, "開けませんでした：" + e.message, "err");
+      $("unlockBtn").disabled = false;
+    }
+  }
+
+  // ===== カレンダー描画 =====
   var weekNames = ["日","月","火","水","木","金","土"];
-
   function render(){
-    var y = current.getFullYear();
-    var m = current.getMonth();
-    document.getElementById("monthLabel").textContent = y + "年 " + (m+1) + "月";
-
-    var head = document.getElementById("weekHead");
-    head.innerHTML = "";
-    weekNames.forEach(function(w,i){
-      var th = document.createElement("th");
-      th.textContent = w;
-      if(i===0) th.className="sun";
-      if(i===6) th.className="sat";
+    var y = current.getFullYear(), m = current.getMonth();
+    $("monthLabel").textContent = y + "年 " + (m + 1) + "月";
+    var head = $("weekHead"); head.innerHTML = "";
+    weekNames.forEach(function(w, i){
+      var th = document.createElement("th"); th.textContent = w;
+      if (i === 0) th.className = "sun"; if (i === 6) th.className = "sat";
       head.appendChild(th);
     });
 
-    var firstDay = new Date(y,m,1).getDay();
-    var lastDate = new Date(y,m+1,0).getDate();
-    var todayStr = dateKey(new Date().getFullYear(), new Date().getMonth(), new Date().getDate());
+    var byDate = {};
+    q("SELECT * FROM items WHERE date LIKE ? ORDER BY kind DESC, id", [y + "-" + pad(m + 1) + "-%"])
+      .forEach(function(r){ (byDate[r.date] = byDate[r.date] || []).push(r); });
 
-    var body = document.getElementById("calBody");
-    body.innerHTML = "";
-    var row = document.createElement("tr");
-    for(var i=0;i<firstDay;i++){
-      var td = document.createElement("td");
-      td.className = "empty";
-      row.appendChild(td);
-    }
-    var dow = firstDay;
-    for(var d=1; d<=lastDate; d++){
-      if(dow === 7){
-        body.appendChild(row);
-        row = document.createElement("tr");
-        dow = 0;
-      }
-      var key = dateKey(y,m,d);
-      var td = document.createElement("td");
-      var cls = [];
-      if(dow===0) cls.push("sun");
-      if(dow===6) cls.push("sat");
-      if(key===todayStr) cls.push("today");
+    var firstDay = new Date(y, m, 1).getDay(), lastDate = new Date(y, m + 1, 0).getDate();
+    var tk = todayKey(), body = $("calBody"); body.innerHTML = "";
+    var row = document.createElement("tr"), dow;
+    for (dow = 0; dow < firstDay; dow++){ var e0 = document.createElement("td"); e0.className = "empty"; row.appendChild(e0); }
+    for (var d = 1; d <= lastDate; d++){
+      if (dow === 7){ body.appendChild(row); row = document.createElement("tr"); dow = 0; }
+      var key = dateKey(y, m, d), td = document.createElement("td"), cls = [];
+      if (dow === 0) cls.push("sun"); if (dow === 6) cls.push("sat"); if (key === tk) cls.push("today");
       td.className = cls.join(" ");
-
-      var num = document.createElement("div");
-      num.className = "daynum";
-      num.textContent = d;
-      td.appendChild(num);
-
-      var addBtn = document.createElement("button");
-      addBtn.className = "add-day";
-      addBtn.textContent = "＋";
-      addBtn.onclick = (function(k){ return function(){ openModal(k); }; })(key);
-      td.appendChild(addBtn);
-
-      var evWrap = document.createElement("div");
-      evWrap.className = "events";
-      (events[key]||[]).forEach(function(ev, idx){
-        var evEl = document.createElement("div");
-        evEl.className = "event";
-        var span = document.createElement("span");
-        span.textContent = ev.title;
-        span.title = ev.memo || "";
-        var x = document.createElement("span");
-        x.className = "x";
-        x.textContent = "×";
-        x.onclick = (function(k,i){ return function(ev2){ ev2.stopPropagation(); removeEvent(k,i); }; })(key, idx);
-        evEl.appendChild(span);
-        evEl.appendChild(x);
-        evWrap.appendChild(evEl);
+      td.innerHTML = '<div class="daynum">' + d + '</div>';
+      var add = document.createElement("button"); add.className = "add-day"; add.textContent = "＋";
+      add.onclick = (function(k){ return function(){ openItem(null, k); }; })(key);
+      td.appendChild(add);
+      var wrap = document.createElement("div"); wrap.className = "events";
+      (byDate[key] || []).forEach(function(r){
+        var el = document.createElement("div");
+        el.className = "event" + (r.kind === "task" ? " task" : "") + (r.done ? " done" : "");
+        el.title = r.memo || "";
+        if (r.kind === "task"){
+          var cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!r.done;
+          cb.onclick = function(ev){ ev.stopPropagation();
+            db.run("UPDATE items SET done=?, updated_at=? WHERE id=?", [cb.checked ? 1 : 0, nowIso(), r.id]);
+            setDirty(true); render(); };
+          el.appendChild(cb);
+        }
+        var t = document.createElement("span"); t.className = "t"; t.textContent = r.title;
+        el.appendChild(t);
+        el.onclick = function(){ openItem(r.id); };
+        wrap.appendChild(el);
       });
-      td.appendChild(evWrap);
-
-      row.appendChild(td);
-      dow++;
+      td.appendChild(wrap); row.appendChild(td); dow++;
     }
-    while(dow!==0 && dow<7){
-      var pad = document.createElement("td");
-      pad.className = "empty";
-      row.appendChild(pad);
-      dow++;
-    }
+    while (dow !== 0 && dow < 7){ var e1 = document.createElement("td"); e1.className = "empty"; row.appendChild(e1); dow++; }
     body.appendChild(row);
   }
 
-  function removeEvent(key, idx){
-    if(!events[key]) return;
-    events[key].splice(idx,1);
-    if(events[key].length===0) delete events[key];
-    saveEvents(events);
-    render();
+  // ===== 予定の追加・編集 =====
+  function openItem(id, key){
+    editingId = id;
+    if (id){
+      var r = q("SELECT * FROM items WHERE id=?", [id])[0];
+      $("itemTitle").textContent = "編集";
+      $("itKind").value = r.kind; $("itDate").value = r.date; $("itName").value = r.title; $("itMemo").value = r.memo || "";
+      $("itDel").style.display = "";
+    } else {
+      $("itemTitle").textContent = "追加";
+      $("itKind").value = "event"; $("itDate").value = key; $("itName").value = ""; $("itMemo").value = "";
+      $("itDel").style.display = "none";
+    }
+    $("itemBg").classList.add("open"); $("itName").focus();
   }
+  function closeItem(){ $("itemBg").classList.remove("open"); editingId = null; }
+  $("itCancel").onclick = closeItem;
+  $("itemBg").onclick = function(e){ if (e.target === this) closeItem(); };
+  $("itSave").onclick = function(){
+    var title = $("itName").value.trim(), date = $("itDate").value;
+    if (!title || !date) return;
+    var kind = $("itKind").value, memo = $("itMemo").value.trim();
+    if (editingId){
+      db.run("UPDATE items SET kind=?, date=?, title=?, memo=?, updated_at=? WHERE id=?",
+        [kind, date, title, memo, nowIso(), editingId]);
+    } else {
+      db.run("INSERT INTO items(date,kind,title,memo,done,author,created_at,updated_at) VALUES(?,?,?,?,0,?,?,?)",
+        [date, kind, title, memo, AUTHOR, nowIso(), nowIso()]);
+    }
+    setDirty(true); closeItem(); render();
+  };
+  $("itDel").onclick = function(){
+    if (!editingId) return;
+    db.run("DELETE FROM items WHERE id=?", [editingId]);
+    setDirty(true); closeItem(); render();
+  };
 
-  function openModal(key){
-    pendingDateKey = key;
-    document.getElementById("modalTitle").textContent = key + " の予定";
-    document.getElementById("evTitle").value = "";
-    document.getElementById("evMemo").value = "";
-    document.getElementById("modalBg").classList.add("open");
-    document.getElementById("evTitle").focus();
+  // ===== コントロールパネル =====
+  function openPanel(){ $("panelBg").classList.add("open"); fillTables(); showTable(); }
+  function closePanel(){ $("panelBg").classList.remove("open"); }
+  $("panelBtn").onclick = openPanel;
+  $("panelClose").onclick = closePanel;
+  $("panelBg").onclick = function(e){ if (e.target === this) closePanel(); };
+
+  function showTab(id){
+    Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(b){ b.classList.toggle("on", b.dataset.tab === id); });
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){ t.classList.toggle("on", t.id === id); });
   }
-  function closeModal(){
-    document.getElementById("modalBg").classList.remove("open");
-    pendingDateKey = null;
+  Array.prototype.forEach.call(document.querySelectorAll(".tabs button"), function(b){
+    b.onclick = function(){ showTab(b.dataset.tab); };
+  });
+
+  function tableHtml(columns, values){
+    if (!columns.length) return '<div class="note" style="padding:8px;">（0件）</div>';
+    var h = "<table class='data'><tr>" + columns.map(function(c){ return "<th>" + esc(c) + "</th>"; }).join("") + "</tr>";
+    values.forEach(function(v){ h += "<tr>" + v.map(function(x){ return "<td title='" + esc(x) + "'>" + esc(x) + "</td>"; }).join("") + "</tr>"; });
+    return h + "</table>";
   }
+  function fillTables(){
+    var sel = $("tblSel"), keep = sel.value;
+    sel.innerHTML = q("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+      .map(function(r){ return "<option>" + esc(r.name) + "</option>"; }).join("");
+    if (keep) sel.value = keep; else sel.value = "items";
+  }
+  function showTable(){
+    var name = $("tblSel").value; if (!name) return;
+    var res = db.exec('SELECT * FROM "' + name.replace(/"/g, '""') + '" ORDER BY 1');
+    var cnt = q('SELECT COUNT(*) AS n FROM "' + name.replace(/"/g, '""') + '"')[0].n;
+    $("tblInfo").textContent = name + "：" + cnt + " 件";
+    $("tblOut").innerHTML = res.length ? tableHtml(res[0].columns, res[0].values) : tableHtml([], []);
+  }
+  $("tblShow").onclick = showTable;
+  $("tblSel").onchange = showTable;
 
-  document.getElementById("cancelBtn").onclick = closeModal;
-  document.getElementById("modalBg").onclick = function(e){
-    if(e.target === this) closeModal();
-  };
-  document.getElementById("saveBtn").onclick = function(){
-    var title = document.getElementById("evTitle").value.trim();
-    if(!title || !pendingDateKey) return;
-    var memo = document.getElementById("evMemo").value.trim();
-    if(!events[pendingDateKey]) events[pendingDateKey] = [];
-    events[pendingDateKey].push({title: title, memo: memo});
-    saveEvents(events);
-    closeModal();
-    render();
-  };
-
-  document.getElementById("prevBtn").onclick = function(){
-    current.setMonth(current.getMonth()-1);
-    render();
-  };
-  document.getElementById("nextBtn").onclick = function(){
-    current.setMonth(current.getMonth()+1);
-    render();
-  };
-  document.getElementById("todayBtn").onclick = function(){
-    current = new Date();
-    current.setDate(1);
-    render();
+  $("sqlRun").onclick = function(){
+    var sql = $("sqlIn").value, out = $("sqlOut");
+    try {
+      var res = db.exec(sql);
+      var changed = db.getRowsModified();
+      var writes = /^\s*(insert|update|delete|replace|create|drop|alter)/im.test(sql);
+      if (writes){ setDirty(true); render(); fillTables(); }
+      out.innerHTML = res.length ? res.map(function(r){ return tableHtml(r.columns, r.values); }).join("<br>")
+        : '<div class="note" style="padding:8px;">実行しました（変更 ' + changed + ' 行）</div>';
+    } catch(e){
+      out.innerHTML = '<div class="msg err" style="padding:8px;">' + esc(e.message) + "</div>";
+    }
   };
 
-  render();
+  // ===== DBに保存（Gitへ書き込む） =====
+  $("saveBtn").onclick = async function(){
+    var pm = $("panelMsg");
+    if (!TOKEN){ msg(pm, "Gitへ書き込む鍵がまだありません。【設定】で登録してください。", "err"); showTab("tSet"); return; }
+    this.disabled = true; msg(pm, "暗号化してGitへ書き込んでいます…");
+    try {
+      var text = await encryptBytes(PASS, db.export());
+      var n = q("SELECT COUNT(*) AS n FROM items")[0].n;
+      var r = await ghPutText(P_DB, text, dbSha, "calendar: DB保存 " + n + "件" + (AUTHOR ? "（" + AUTHOR + "）" : ""));
+      dbSha = r.sha; setDirty(false);
+      msg(pm, "保存しました（" + n + "件）", "ok");
+      $("status").className = "status";
+      $("status").innerHTML = "✔ Gitに保存済み " + new Date().toLocaleTimeString("ja-JP") +
+        ' — <a href="' + esc(r.commit.html_url) + '" target="_blank" rel="noopener">コミットを見る</a>';
+    } catch(e){
+      if (e.status === 409 || e.status === 422){
+        msg(pm, "他の人が先に保存していました。【最新を取得】してから、もう一度入れ直してください。", "err");
+      } else {
+        msg(pm, "保存できませんでした：" + e.message, "err");
+      }
+    }
+    this.disabled = false;
+  };
+
+  $("pullBtn").onclick = async function(){
+    var pm = $("panelMsg");
+    if (dirty && !confirm("未保存の変更があります。捨てて最新を取得しますか？")) return;
+    msg(pm, "最新を取得しています…");
+    try { await loadDbFromGit(); render(); fillTables(); showTable(); msg(pm, "最新を取得しました", "ok"); }
+    catch(e){ msg(pm, "取得できませんでした：" + e.message, "err"); }
+  };
+
+  // ===== Ruby集計 =====
+  $("rubyRun").onclick = async function(){
+    var info = $("rubyInfo"), out = $("rubyOut");
+    this.disabled = true;
+    try {
+      if (!rubyVM){
+        info.textContent = "Rubyを読み込んでいます…（初回だけ）";
+        var mod = await WebAssembly.compileStreaming(fetch(RUBY_WASM));
+        var made = await window["ruby-wasm-wasi"].DefaultRubyVM(mod);
+        rubyVM = made.vm;
+        rubyVM.eval($("rubySrc").textContent);
+      }
+      window.__zombaRows = JSON.stringify(q("SELECT * FROM items ORDER BY date, id"));
+      window.__zombaToday = todayKey();
+      var s = rubyVM.eval('require "js"; summarize(JS.global[:__zombaRows].to_s, JS.global[:__zombaToday].to_s)').toString();
+      var r = JSON.parse(s);
+      info.textContent = "Ruby " + r.ruby + " で集計しました";
+      var li = function(arr, f){ return arr.length ? arr.map(f).join("<br>") : "（なし）"; };
+      out.innerHTML =
+        '<div class="cards">' +
+          '<div class="card"><small>全部</small><b>' + r.total + '</b></div>' +
+          '<div class="card"><small>予定</small><b>' + r.events + '</b></div>' +
+          '<div class="card"><small>タスク</small><b>' + r.tasks + '</b></div>' +
+          '<div class="card"><small>タスク完了率</small><b>' + r.rate + '%</b></div>' +
+        '</div>' +
+        '<div class="cards">' +
+          '<div class="card list"><small>これから7日</small><br>' + li(r.upcoming, function(x){ return esc(x.date) + " " + (x.kind === "task" ? "☐" : "•") + " " + esc(x.title); }) + '</div>' +
+          '<div class="card list"><small>期限切れのタスク</small><br>' + li(r.overdue, function(x){ return esc(x.date) + " " + esc(x.title); }) + '</div>' +
+          '<div class="card list"><small>月ごと</small><br>' + li(Object.keys(r.by_month), function(k){ return esc(k) + "：" + r.by_month[k]; }) + '</div>' +
+          '<div class="card list"><small>書いた人</small><br>' + li(Object.keys(r.by_author), function(k){ return esc(k) + "：" + r.by_author[k]; }) + '</div>' +
+        '</div>';
+    } catch(e){
+      info.textContent = "Rubyで失敗しました：" + e.message;
+    }
+    this.disabled = false;
+  };
+
+  // ===== 設定：鍵の登録 =====
+  function updateTokState(){
+    $("tokState").textContent = TOKEN ? "✔ 登録済み（合言葉で開けました）。貼り直すと入れ替えます。"
+      : "まだ登録されていません。登録するまで【DBに保存】はできません（見る・試すことはできます）。";
+  }
+  $("tokSave").onclick = async function(){
+    var pm = $("panelMsg"), t = $("tokIn").value.trim();
+    if (!t){ msg(pm, "鍵を貼ってください", "err"); return; }
+    this.disabled = true; msg(pm, "鍵を確かめています…");
+    var old = TOKEN; TOKEN = t;
+    try {
+      var r = await fetch("https://api.github.com/repos/" + OWNER + "/" + REPO,
+        {headers:{"Authorization":"Bearer " + t, "Accept":"application/vnd.github+json"}, cache:"no-store"});
+      if (!r.ok) throw new Error("この鍵ではリポジトリを開けません（" + r.status + "）");
+      var info = await r.json();
+      if (!info.permissions || !info.permissions.push) throw new Error("この鍵には書き込み権限がありません");
+      var cur = await ghGetText(P_TOKEN, true);
+      var res = await ghPutText(P_TOKEN, await encryptBytes(PASS, new TextEncoder().encode(t)),
+        cur ? cur.sha : null, "setup: 書き込み鍵を登録（合言葉で暗号化済み）");
+      tokSha = res.sha; $("tokIn").value = "";
+      updateTokState(); msg(pm, "鍵を登録しました。【DBに保存】が使えます。", "ok");
+    } catch(e){
+      TOKEN = old; msg(pm, "登録できませんでした：" + e.message, "err");
+    }
+    this.disabled = false;
+  };
+
+  // ===== 設定：前のカレンダーを取り込む =====
+  $("importBtn").onclick = function(){
+    var raw = null; try { raw = localStorage.getItem(OLD_KEY); } catch(e){}
+    var data = {}; try { data = raw ? JSON.parse(raw) : {}; } catch(e){}
+    var n = 0;
+    Object.keys(data).forEach(function(k){
+      (data[k] || []).forEach(function(ev){
+        db.run("INSERT INTO items(date,kind,title,memo,done,author,created_at,updated_at) VALUES(?,?,?,?,0,?,?,?)",
+          [k, "event", ev.title || "", ev.memo || "", AUTHOR, nowIso(), nowIso()]);
+        n++;
+      });
+    });
+    $("importInfo").textContent = n ? n + " 件取り込みました（【DBに保存】で確定）" : "このブラウザに前の予定はありませんでした";
+    if (n){ setDirty(true); render(); fillTables(); }
+  };
+
+  $("lockBtn").onclick = function(){
+    if (dirty && !confirm("未保存の変更があります。ロックすると消えます。よろしいですか？")) return;
+    location.reload();
+  };
+
+  // ===== 月の移動 =====
+  $("prevBtn").onclick = function(){ current.setMonth(current.getMonth() - 1); render(); };
+  $("nextBtn").onclick = function(){ current.setMonth(current.getMonth() + 1); render(); };
+  $("todayBtn").onclick = function(){ current = new Date(); current.setDate(1); render(); };
+
+  window.addEventListener("beforeunload", function(e){ if (dirty){ e.preventDefault(); e.returnValue = ""; } });
+
+  // ===== 起動 =====
+  try { $("nameIn").value = localStorage.getItem("zomba_author") || ""; } catch(e){}
+  $("unlockBtn").onclick = unlock;
+  $("passIn").onkeydown = function(e){ if (e.key === "Enter") unlock(); };
+  $("passIn").focus();
 })();
 </script>
 </body>
