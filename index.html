@@ -96,7 +96,7 @@
     <h3>⚙ コントロールパネル</h3>
     <p class="note" style="margin:0;">DBを見る・Gitに保存するには合言葉が要ります。</p>
     <label>合言葉</label>
-    <input type="password" id="passIn" autocomplete="off">
+    <input type="text" id="passIn" autocomplete="off" lang="ja" placeholder="ひらがなで入力">
     <div class="actions">
       <button id="lockCancel">キャンセル</button>
       <button class="primary" id="unlockBtn">開く</button>
@@ -408,7 +408,9 @@ end
   }
   async function unlock(){
     var lm = $("lockMsg");
-    var p = $("passIn").value.normalize("NFC").trim();
+    // カタカナで打っても通す（ゾンバ → ぞんば）
+    var p = $("passIn").value.normalize("NFKC").trim()
+      .replace(/[ァ-ヶ]/g, function(c){ return String.fromCharCode(c.charCodeAt(0) - 0x60); });
     if (!p){ msg(lm, "合言葉を入れてください", "err"); return; }
     $("unlockBtn").disabled = true;
     msg(lm, "確かめています…");
@@ -709,7 +711,8 @@ end
   // ===== 起動 =====
   try { AUTHOR = localStorage.getItem("zomba_author") || ""; } catch(e){}
   $("unlockBtn").onclick = unlock;
-  $("passIn").onkeydown = function(e){ if (e.key === "Enter") unlock(); };
+  // 変換を確定するEnterでは開かない（確定後のEnterで開く）
+  $("passIn").onkeydown = function(e){ if (e.key === "Enter" && !e.isComposing && e.keyCode !== 229) unlock(); };
   boot();
 })();
 </script>
