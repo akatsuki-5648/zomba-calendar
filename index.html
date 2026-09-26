@@ -70,11 +70,6 @@
   .msg{font-size:.8rem;margin-top:8px;min-height:1.1em;}
   .msg.err{color:var(--danger);} .msg.ok{color:var(--today);}
 
-  #lock{max-width:360px;margin:12vh auto 0;background:var(--panel);border:1px solid var(--border);
-    border-radius:14px;padding:24px;}
-  #lock h2{margin:0 0 6px;font-size:1.1rem;}
-  #lock p{font-size:.8rem;color:var(--sub);margin:0 0 8px;}
-  #app{display:none;}
 
   .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
   .tabs button.on{border-color:var(--accent);color:var(--accent);}
@@ -95,16 +90,19 @@
 </head>
 <body>
 
-<!-- ===== ロック画面：合言葉 ===== -->
-<div id="lock">
-  <h2>🗓️ ゾンバ共同作業カレンダー</h2>
-  <p>合言葉を入れると開きます。</p>
-  <label>合言葉</label>
-  <input type="password" id="passIn" autocomplete="off">
-  <label>名前（誰が書いたかの記録用）</label>
-  <input type="text" id="nameIn" placeholder="例：ゾンバ">
-  <div class="actions"><button class="primary" id="unlockBtn">開く</button></div>
-  <div class="msg" id="lockMsg"></div>
+<!-- ===== 合言葉：コントロールパネル（DB）を開く時だけ ===== -->
+<div class="modal-bg" id="lockBg">
+  <div class="modal">
+    <h3>⚙ コントロールパネル</h3>
+    <p class="note" style="margin:0;">DBを見る・Gitに保存するには合言葉が要ります。</p>
+    <label>合言葉</label>
+    <input type="password" id="passIn" autocomplete="off">
+    <div class="actions">
+      <button id="lockCancel">キャンセル</button>
+      <button class="primary" id="unlockBtn">開く</button>
+    </div>
+    <div class="msg" id="lockMsg"></div>
+  </div>
 </div>
 
 <!-- ===== 本体 ===== -->
@@ -130,7 +128,7 @@
 
   <div class="legend">
     日付の右上「＋」で予定・タスクを追加。クリックで編集。<br>
-    追加・編集はまだ<b>このブラウザの中だけ</b>。コントロールパネルの【DBに保存】でGitに書き込まれます。
+    追加・編集はまだ<b>このブラウザの中だけ</b>。コントロールパネル（合言葉）の【DBに保存】でGitに書き込まれます。
   </div>
   <footer>ゾンバさんとの共同作業 / SQLite ＋ Ruby（ruby.wasm）＋ GitHub</footer>
 </div>
@@ -147,6 +145,8 @@
     <input type="text" id="itName" placeholder="例：定例MTG">
     <label>メモ</label>
     <textarea id="itMemo" placeholder="任意"></textarea>
+    <label>名前（誰が書いたか）</label>
+    <input type="text" id="nameIn" placeholder="例：ゾンバ">
     <div class="actions">
       <button class="warn left" id="itDel">削除</button>
       <button id="itCancel">キャンセル</button>
@@ -262,7 +262,9 @@ end
   // ===== 設定 =====
   var OWNER = "akatsuki-5648", REPO = "zomba-calendar", BRANCH = "main";
   var API = "https://api.github.com/repos/" + OWNER + "/" + REPO + "/contents/";
-  var P_DB = "data/calendar.db.enc.json";
+  var P_DB = "data/calendar.db";
+  // 合言葉の照合用（sha256("zomba-calendar:" + 合言葉)）。★DBを見る時だけ使う
+  var PASS_HASH = "76560f130d79b8d5976e6247969460a9e545179adbcebe95adf947668d5f0f68";
   var P_TOKEN = "data/token.enc.json";
   var SQLJS_DIR = "https://cdn.jsdelivr.net/npm/sql.js@1.14.2/dist/";
   var RUBY_WASM = "https://cdn.jsdelivr.net/npm/@ruby/3.4-wasm-wasi@2.10.1/dist/ruby+stdlib.wasm";
@@ -362,10 +364,12 @@ end
     db.run("CREATE TABLE IF NOT EXISTS meta(key TEXT PRIMARY KEY, value TEXT)");
   }
   async function loadDbFromGit(){
-    var got = await ghGetText(P_DB, !!TOKEN);
+    var got = null;
+    try { got = await gh("GET", P_DB, null, !!TOKEN); }
+    catch(e){ if (e.status !== 404) throw e; }
     if (db) db.close();
     if (got){
-      db = new SQL.Database(await decryptBytes(PASS, got.text));
+      db = new SQL.Database(b64ToBytes((got.content || "").replace(/\s/g, "")));
       dbSha = got.sha;
     } else {
       db = new SQL.Database();
@@ -381,38 +385,52 @@ end
     else if (s.className.indexOf("dirty") >= 0){ s.className = "status"; s.textContent = ""; }
   }
 
-  // ===== ロック解除 =====
+  // ===== 起動：カレンダーは合言葉なしで誰でも開ける =====
+  async function boot(){
+    var s = $("status");
+    s.textContent = "読み込んでいます…";
+    try {
+      SQL = await initSqlJs({locateFile: function(f){ return SQLJS_DIR + f; }});
+      await loadDbFromGit();
+      s.textContent = "";
+    } catch(e){
+      if (!SQL) { s.textContent = "SQLiteを読み込めませんでした：" + e.message; return; }
+      db = new SQL.Database(); ensureSchema();
+      s.textContent = "Gitから読み込めませんでした（" + e.message + "）。空のカレンダーで開いています。";
+    }
+    render();
+  }
+
+  // ===== 合言葉：コントロールパネル（DB）を開く時だけ =====
+  async function sha256hex(text){
+    var b = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
+    return Array.prototype.map.call(new Uint8Array(b), function(x){ return x.toString(16).padStart(2, "0"); }).join("");
+  }
   async function unlock(){
     var lm = $("lockMsg");
     var p = $("passIn").value.normalize("NFC").trim();
     if (!p){ msg(lm, "合言葉を入れてください", "err"); return; }
-    AUTHOR = $("nameIn").value.trim();
-    try { localStorage.setItem("zomba_author", AUTHOR); } catch(e){}
     $("unlockBtn").disabled = true;
-    msg(lm, "開いています…");
+    msg(lm, "確かめています…");
     try {
+      if ((await sha256hex("zomba-calendar:" + p)) !== PASS_HASH){
+        msg(lm, "合言葉が違います", "err"); $("unlockBtn").disabled = false; return;
+      }
+      PASS = p;
       var tok = await ghGetText(P_TOKEN, false);
       if (tok){
         try { TOKEN = new TextDecoder().decode(await decryptBytes(p, tok.text)); tokSha = tok.sha; }
-        catch(e){ msg(lm, "合言葉が違います", "err"); $("unlockBtn").disabled = false; return; }
+        catch(e){ TOKEN = null; }
       }
-      PASS = p;
-      if (!SQL) SQL = await initSqlJs({locateFile: function(f){ return SQLJS_DIR + f; }});
-      try { await loadDbFromGit(); }
-      catch(e){
-        if (e.name === "OperationError"){ msg(lm, "DBの暗号が合言葉と合いません", "err"); $("unlockBtn").disabled = false; return; }
-        throw e;
-      }
-      $("lock").style.display = "none";
-      $("app").style.display = "block";
-      render();
+      $("passIn").value = ""; msg(lm, "");
+      $("lockBg").classList.remove("open");
       updateTokState();
       openPanel();
       if (!TOKEN) showTab("tSet");
     } catch(e){
       msg(lm, "開けませんでした：" + e.message, "err");
-      $("unlockBtn").disabled = false;
     }
+    $("unlockBtn").disabled = false;
   }
 
   // ===== カレンダー描画 =====
@@ -480,6 +498,7 @@ end
       $("itKind").value = "event"; $("itDate").value = key; $("itName").value = ""; $("itMemo").value = "";
       $("itDel").style.display = "none";
     }
+    $("nameIn").value = AUTHOR;
     $("itemBg").classList.add("open"); $("itName").focus();
   }
   function closeItem(){ $("itemBg").classList.remove("open"); editingId = null; }
@@ -489,6 +508,8 @@ end
     var title = $("itName").value.trim(), date = $("itDate").value;
     if (!title || !date) return;
     var kind = $("itKind").value, memo = $("itMemo").value.trim();
+    AUTHOR = $("nameIn").value.trim();
+    try { localStorage.setItem("zomba_author", AUTHOR); } catch(e){}
     if (editingId){
       db.run("UPDATE items SET kind=?, date=?, title=?, memo=?, updated_at=? WHERE id=?",
         [kind, date, title, memo, nowIso(), editingId]);
@@ -507,7 +528,12 @@ end
   // ===== コントロールパネル =====
   function openPanel(){ $("panelBg").classList.add("open"); fillTables(); showTable(); }
   function closePanel(){ $("panelBg").classList.remove("open"); }
-  $("panelBtn").onclick = openPanel;
+  $("panelBtn").onclick = function(){
+    if (PASS){ openPanel(); return; }
+    msg($("lockMsg"), ""); $("lockBg").classList.add("open"); $("passIn").focus();
+  };
+  $("lockCancel").onclick = function(){ $("lockBg").classList.remove("open"); };
+  $("lockBg").onclick = function(e){ if (e.target === this) this.classList.remove("open"); };
   $("panelClose").onclick = closePanel;
   $("panelBg").onclick = function(e){ if (e.target === this) closePanel(); };
 
@@ -559,11 +585,13 @@ end
   $("saveBtn").onclick = async function(){
     var pm = $("panelMsg");
     if (!TOKEN){ msg(pm, "Gitへ書き込む鍵がまだありません。【設定】で登録してください。", "err"); showTab("tSet"); return; }
-    this.disabled = true; msg(pm, "暗号化してGitへ書き込んでいます…");
+    this.disabled = true; msg(pm, "Gitへ書き込んでいます…");
     try {
-      var text = await encryptBytes(PASS, db.export());
       var n = q("SELECT COUNT(*) AS n FROM items")[0].n;
-      var r = await ghPutText(P_DB, text, dbSha, "calendar: DB保存 " + n + "件" + (AUTHOR ? "（" + AUTHOR + "）" : ""));
+      var body = {message: "calendar: DB保存 " + n + "件", content: bytesToB64(db.export()), branch: BRANCH};
+      if (dbSha) body.sha = dbSha;
+      var put = await gh("PUT", P_DB, body, true);
+      var r = {sha: put.content.sha, commit: put.commit};
       dbSha = r.sha; setDirty(false);
       msg(pm, "保存しました（" + n + "件）", "ok");
       $("status").className = "status";
@@ -668,8 +696,7 @@ end
   };
 
   $("lockBtn").onclick = function(){
-    if (dirty && !confirm("未保存の変更があります。ロックすると消えます。よろしいですか？")) return;
-    location.reload();
+    PASS = null; TOKEN = null; closePanel();
   };
 
   // ===== 月の移動 =====
@@ -680,10 +707,10 @@ end
   window.addEventListener("beforeunload", function(e){ if (dirty){ e.preventDefault(); e.returnValue = ""; } });
 
   // ===== 起動 =====
-  try { $("nameIn").value = localStorage.getItem("zomba_author") || ""; } catch(e){}
+  try { AUTHOR = localStorage.getItem("zomba_author") || ""; } catch(e){}
   $("unlockBtn").onclick = unlock;
   $("passIn").onkeydown = function(e){ if (e.key === "Enter") unlock(); };
-  $("passIn").focus();
+  boot();
 })();
 </script>
 </body>
